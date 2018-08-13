@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/sunho/crusia-server/store"
-	"github.com/sunho/crusia-server/utils"
+	"github.com/sdbx/crusia-server/store"
+	"github.com/sdbx/crusia-server/utils"
 )
 
 type ApiInterface interface {

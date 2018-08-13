@@ -2,7 +2,7 @@ package boltstore
 
 import (
 	"github.com/asdine/storm"
-	"github.com/sunho/crusia-server/store"
+	"github.com/sdbx/crusia-server/store"
 )
 
 type BoltStore struct {

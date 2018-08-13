@@ -9,8 +9,8 @@ import (
 	"syscall"
 
 	"github.com/asdine/storm"
-	"github.com/sunho/crusia-server/server"
-	"github.com/sunho/crusia-server/store/boltstore"
+	"github.com/sdbx/crusia-server/server"
+	"github.com/sdbx/crusia-server/store/boltstore"
 	yaml "gopkg.in/yaml.v2"
 )
 

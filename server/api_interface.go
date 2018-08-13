@@ -1,6 +1,6 @@
 package server
 
-import "github.com/sunho/crusia-server/store"
+import "github.com/sdbx/crusia-server/store"
 
 type apiInterface struct {
 	s *Server
