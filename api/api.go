@@ -48,10 +48,7 @@ func (a *Api) Http() http.Handler {
 
 func (a *Api) GetVersion(w http.ResponseWriter, r *http.Request) {
 	v := a.in.GetVersion()
-	resp := map[string]interface{}{
-		"version": v,
-	}
-	utils.HttpJson(w, resp)
+	utils.HttpJson(w, v)
 }
 
 func (a *Api) Login(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +70,7 @@ func (a *Api) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if u.Passhash != req.Passhash {
-		http.Error(w, http.StatusText(403), 403)
+		utils.HttpError(w, fmt.Errorf(""), 403)
 		return
 	}
 
@@ -83,10 +80,7 @@ func (a *Api) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := map[string]interface{}{
-		"token": tok,
-	}
-	utils.HttpJson(w, resp)
+	utils.HttpJson(w, tok)
 }
 
 func (a *Api) Register(w http.ResponseWriter, r *http.Request) {
@@ -121,7 +115,7 @@ func (a *Api) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(200)
+	utils.HttpOk(w)
 }
 
 func (a *Api) GetSaveData(w http.ResponseWriter, r *http.Request) {
@@ -166,5 +160,5 @@ func (a *Api) PostSaveData(w http.ResponseWriter, r *http.Request) {
 		utils.HttpError(w, err, 500)
 		return
 	}
-	w.WriteHeader(200)
+	utils.HttpOk(w)
 }
