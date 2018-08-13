@@ -1,3 +1,11 @@
 /crusia-server
 /config.yaml
 /bolt.db
+/client/bin
+/client/.settings
+/client/.actionScriptProperties
+/client/.flexProperties
+/client/.project
+/client/.flexLibProperties
+
+.DS_Store
