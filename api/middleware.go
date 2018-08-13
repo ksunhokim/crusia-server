@@ -32,7 +32,7 @@ func withUser(r *http.Request, u *store.User) *http.Request {
 
 func (a *Api) UserMiddleWare(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		tok := r.Header.Get("Authorization")
+		tok := r.Header.Get("X-Authorization")
 		id, err := a.in.GetToken(tok)
 		if err != nil {
 			utils.HttpError(w, err, 403)

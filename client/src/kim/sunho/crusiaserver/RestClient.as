@@ -54,7 +54,7 @@ package kim.sunho.crusiaserver
 			}
 			
 			if(header) {
-				req.requestHeaders = header;
+				req.requestHeaders = req.requestHeaders.concat(header);
 			}
 			
 			loader.addEventListener(Event.COMPLETE, onComplete);
@@ -64,6 +64,8 @@ package kim.sunho.crusiaserver
 		
 		private function onComplete(e:Event):void
 		{
+			if (e.target != loader) return;
+			
 			try 
 			{
 				var o:Object = JSON.parse(loader.data);
@@ -85,6 +87,8 @@ package kim.sunho.crusiaserver
 		}
 		
 		private function onError(e:IOErrorEvent):void {
+			if (e.target != loader) return;
+			
 			errorHandler(500, e.text);
 			destroy();
 		}

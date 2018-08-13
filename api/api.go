@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/cors"
 	"github.com/go-chi/chi/middleware"
 	"github.com/sdbx/crusia-server/store"
 	"github.com/sdbx/crusia-server/utils"
@@ -32,8 +33,17 @@ func New(in ApiInterface) *Api {
 
 func (a *Api) Http() http.Handler {
 	r := chi.NewRouter()
+	cors := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST"},
+		AllowedHeaders:   []string{"Accept", "X-Authorization", "Content-Type", "X-Save-Version"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	})
+	r.Use(cors.Handler)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
+	r.Get("/crossdomain.xml", getCrossDomain)
 	r.Get("/version", a.GetVersion)
 	r.Post("/login", a.Login)
 	r.Post("/register", a.Register)
@@ -44,6 +54,17 @@ func (a *Api) Http() http.Handler {
 	})
 
 	return r
+}
+
+func getCrossDomain(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, `
+<?xml version="1.0" ?>
+<cross-domain-policy>
+  <site-control permitted-cross-domain-policies="master-only"/>
+  <allow-access-from domain="*"/>
+  <allow-http-request-headers-from domain="*" headers="*"/>
+</cross-domain-policy>
+`)
 }
 
 func (a *Api) GetVersion(w http.ResponseWriter, r *http.Request) {

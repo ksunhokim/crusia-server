@@ -28,13 +28,13 @@ package kim.sunho.crusiaserver
 			RestClient.execute(url + "/version", "GET", null,
 				function(res:Object):void 
 				{
-					if (!res.data || !res.data.version) 
+					if (!res.data) 
 					{
 						errorHandler(CrusiaServerError.BAD_FORMAT);
 					}
 					else 
 					{
-						resultHandler(int(res.data.version));
+						resultHandler(int(res.data));
 					}
 				},
 				function(status:int, err:String):void
@@ -56,13 +56,13 @@ package kim.sunho.crusiaserver
 			RestClient.execute(url + "/login", "POST", params,
 				function(res:Object):void 
 				{
-					if (!res.data || !res.data.token) 
+					if (!res.data) 
 					{
 						errorHandler(CrusiaServerError.BAD_FORMAT, "");
 					}
 					else 
 					{
-						token = res.data.token;
+						token = res.data;
 						resultHandler();
 					}	
 				},
@@ -132,11 +132,11 @@ package kim.sunho.crusiaserver
 		public function getSaveData(resultHandler:Function, errorHandler:Function):void 
 		{
 			var header:Array = tokenHeader();
-			
-			RestClient.execute(url + "/save/get", "POST", "dummy",
+			trace(header);
+			RestClient.execute(url + "/save/get", "POST", {"du":"mmy"},
 				function(res:Object):void 
 				{
-					if (!res.data || !res.data.json) 
+					if (!res.data) 
 					{
 						errorHandler(CrusiaServerError.BAD_FORMAT, "");
 					}
@@ -144,7 +144,7 @@ package kim.sunho.crusiaserver
 					{
 						try 
 						{
-							resultHandler(JSON.parse(res.data.json));
+							resultHandler(JSON.parse(res.data));
 						}
 						catch(e:TypeError)
 						{
@@ -208,7 +208,7 @@ package kim.sunho.crusiaserver
 		private function tokenHeader():Array
 		{
 			var header:Array = new Array();
-			var item:URLRequestHeader = new URLRequestHeader("Authorization", token);
+			var item:URLRequestHeader = new URLRequestHeader("X-Authorization", token);
 			header.push(item);
 			return header;
 		}
