@@ -1,6 +1,7 @@
 package kim.sunho.crusiaserver
 {
 	import flash.events.Event;
+	import flash.events.HTTPStatusEvent;
 	import flash.events.IOErrorEvent;
 	import flash.net.URLLoader;
 	import flash.net.URLLoaderDataFormat;
@@ -32,6 +33,7 @@ package kim.sunho.crusiaserver
 		private var errorHandler:Function;
 		
 		private var loader:URLLoader;
+		private var status:int;
 		
 		public function run():void
 		{
@@ -41,23 +43,27 @@ package kim.sunho.crusiaserver
 			var req:URLRequest = new URLRequest(url);
 			req.method = method;
 			
-			if (params is String) {
+			if (params is String) 
+			{
 				req.contentType = "plain/text";
 				req.data = params;
-			} else {
+			} 
+			else if(params)
+			{
 				req.contentType = "application/json";
 				req.data = JSON.stringify(params);
 			}
 			
 			loader.addEventListener(Event.COMPLETE, onComplete);
 			loader.addEventListener(IOErrorEvent.IO_ERROR, onError);
+			loader.addEventListener(HTTPStatusEvent.HTTP_STATUS, onStatus);
+			loader.load(req);
 		}
 		
 		private function onComplete(e:Event):void
 		{
-			if (e.target != loader) return;
-			
-			if (json) {
+			if (json) 
+			{
 				try 
 				{
 					resultHandler(JSON.parse(loader.data));
@@ -66,7 +72,9 @@ package kim.sunho.crusiaserver
 				{
 					errorHandler("json parse error");
 				}
-			} else {
+			} 
+			else 
+			{
 				resultHandler(loader.data);
 			}
 			
@@ -74,10 +82,14 @@ package kim.sunho.crusiaserver
 		}
 		
 		private function onError(e:IOErrorEvent):void {
-			if (e.target != loader) return;
-			errorHandler(e.text);
+			errorHandler(status, e.text);
 			destroy();
 		}
+		
+		private function onStatus(e:HTTPStatusEvent):void {
+			status = e.status;
+		}
+		
 		
 		private function destroy():void 
 		{

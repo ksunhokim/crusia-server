@@ -35,10 +35,8 @@ func (a *Api) Http() http.Handler {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Get("/version", a.GetVersion)
-	r.Route("/user", func(s chi.Router) {
-		s.Get("/", a.Login)
-		s.Post("/", a.Register)
-	})
+	r.Post("/login", a.Login)
+	r.Post("/register", a.Register)
 	r.Route("/save", func(s chi.Router) {
 		s.Use(a.UserMiddleWare)
 		s.Get("/", a.GetSaveData)
