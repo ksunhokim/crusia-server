@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/sunho/crusia-server/store"
 	"github.com/sunho/crusia-server/utils"
 )
 
 type ApiInterface interface {
-	Decrypt(buf []byte, version int) ([]byte, error)
+	DecryptSaveData(version int, payload string) ([]byte, error)
 	CreateToken(id int) (string, error)
 	GetToken(tok string) (int, error)
 	GetStore() store.Store
@@ -30,12 +32,15 @@ func New(in ApiInterface) *Api {
 
 func (a *Api) Http() http.Handler {
 	r := chi.NewRouter()
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
 	r.Get("/version", a.GetVersion)
 	r.Route("/user", func(s chi.Router) {
 		s.Get("/", a.Login)
 		s.Post("/", a.Register)
 	})
 	r.Route("/save", func(s chi.Router) {
+		s.Use(a.UserMiddleWare)
 		s.Get("/", a.GetSaveData)
 		s.Post("/", a.PostSaveData)
 	})
@@ -121,10 +126,6 @@ func (a *Api) Register(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-func getUser(r *http.Request) *store.User {
-	return nil
-}
-
 func (a *Api) GetSaveData(w http.ResponseWriter, r *http.Request) {
 	u := getUser(r)
 	data, err := a.in.GetStore().GetSaveData(u.ID)
@@ -136,9 +137,23 @@ func (a *Api) GetSaveData(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Api) PostSaveData(w http.ResponseWriter, r *http.Request) {
-	buf, err := ioutil.ReadAll(r.Body)
+	ver_ := r.Header.Get("X-Save-Version")
+	ver, err := strconv.Atoi(ver_)
 	if err != nil {
 		utils.HttpError(w, err, 400)
+		return
+	}
+
+	payload, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		utils.HttpError(w, err, 400)
+		return
+	}
+
+	buf, err := a.in.DecryptSaveData(ver, string(payload))
+	if err != nil {
+		utils.HttpError(w, err, 400)
+		return
 	}
 
 	u := getUser(r)

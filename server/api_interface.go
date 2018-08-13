@@ -6,16 +6,16 @@ type apiInterface struct {
 	s *Server
 }
 
-func (a *apiInterface) Decrypt(buf []byte, version int) ([]byte, error) {
-	return nil, nil
+func (a *apiInterface) DecryptSaveData(version int, payload string) ([]byte, error) {
+	return a.s.decryptSaveData(version, payload)
 }
 
 func (a *apiInterface) CreateToken(id int) (string, error) {
-	return "", nil
+	return a.s.createToken(id)
 }
 
 func (a *apiInterface) GetToken(tok string) (int, error) {
-	return 0, nil
+	return a.s.getToken(tok)
 }
 
 func (a *apiInterface) GetStore() store.Store {

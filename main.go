@@ -14,25 +14,26 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-type Secret struct {
+type SaveKey struct {
 	Version int    `yaml:"version"`
 	Key     string `yaml:"key"`
 }
 
 type Config struct {
-	Addr    string   `yaml:"addr"`
-	Version int      `yaml:"version"`
-	Secrets []Secret `yaml:"secrets"`
+	Addr     string    `yaml:"addr"`
+	Version  int       `yaml:"version"`
+	Key      string    `yaml:"key"`
+	SaveKeys []SaveKey `yaml:"save_keys"`
 }
 
-func parseSecrets(secrets []Secret) ([]server.Secret, error) {
-	out := make([]server.Secret, len(secrets))
-	for _, s := range secrets {
+func parseSaveKeys(keys []SaveKey) ([]server.SaveKey, error) {
+	out := make([]server.SaveKey, len(keys))
+	for _, s := range keys {
 		buf, err := base64.StdEncoding.DecodeString(s.Key)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, server.Secret{
+		out = append(out, server.SaveKey{
 			Version: s.Version,
 			Payload: buf,
 		})
@@ -40,19 +41,35 @@ func parseSecrets(secrets []Secret) ([]server.Secret, error) {
 	return out, nil
 }
 
+func createServer(buf []byte, db *storm.DB) (*server.Server, error) {
+	conf := Config{}
+	err := yaml.Unmarshal(buf, &conf)
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := base64.StdEncoding.DecodeString(conf.Key)
+	if err != nil {
+		return nil, err
+	}
+
+	skeys, err := parseSaveKeys(conf.SaveKeys)
+	if err != nil {
+		return nil, err
+	}
+
+	bs := boltstore.New(db)
+	err = bs.Init()
+	if err != nil {
+		return nil, err
+	}
+
+	serv := server.New(conf.Version, bs, key, skeys, conf.Addr)
+	return serv, nil
+}
+
 func main() {
 	buf, err := ioutil.ReadFile("config.yaml")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	conf := Config{}
-	err = yaml.Unmarshal(buf, &conf)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	secrets, err := parseSecrets(conf.Secrets)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,13 +79,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	bs := boltstore.New(db)
-	err = bs.Init()
+	serv, err := createServer(buf, db)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	serv := server.New(conf.Version, bs, secrets, conf.Addr)
 	serv.Run()
 
 	sc := make(chan os.Signal, 1)

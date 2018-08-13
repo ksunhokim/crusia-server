@@ -2,12 +2,10 @@ package utils
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 )
 
 func HttpError(w http.ResponseWriter, err error, code int) {
-	log.Println("ERROR", err)
 	http.Error(w, err.Error(), code)
 }
 
