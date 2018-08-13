@@ -27,21 +27,24 @@ var (
 
 type SaveKey struct {
 	Version int
+	IV      []byte
 	Payload []byte
 }
 
 type Server struct {
 	version   int
 	key       []byte
+	iv        []byte,
 	saveKeys  []SaveKey
 	stor      store.Store
 	apiServer *http.Server
 }
 
-func New(version int, stor store.Store, key []byte, saveKeys []SaveKey, addr string) *Server {
+func New(version int, stor store.Store, key []byte, iv []byte, saveKeys []SaveKey, addr string) *Server {
 	s := &Server{
 		version:  version,
 		key:      key,
+		iv:       iv,
 		saveKeys: saveKeys,
 		stor:     stor,
 	}
@@ -76,11 +79,11 @@ func (s *Server) createToken(id int) (string, error) {
 	}
 
 	payload = append(payload, []byte(str)...)
-	return Encrypt(s.key, payload)
+	return Encrypt(s.key, s.iv, payload)
 }
 
 func (s *Server) getToken(tok string) (int, error) {
-	payload, err := Decrypt(s.key, tok)
+	payload, err := Decrypt(s.key, s.iv, tok)
 	if err != nil {
 		return 0, err
 	}
@@ -94,10 +97,10 @@ func (s *Server) getToken(tok string) (int, error) {
 	return id, nil
 }
 
-func (s *Server) getSaveKey(version int) ([]byte, bool) {
+func (s *Server) getSaveKey(version int) (SaveKey, bool) {
 	for _, key := range s.saveKeys {
 		if key.Version == version {
-			return key.Payload, true
+			return key, true
 		}
 	}
 
@@ -110,10 +113,11 @@ func (s *Server) decryptSaveData(version int, payload string) ([]byte, error) {
 		return nil, ErrInvalidVersion
 	}
 
-	buf, err := Decrypt(key, payload)
+	buf, err := Decrypt(key.Payload, key.IV, payload)
 	if err != nil {
 		return nil, err
 	}
+	log.Println(string(buf))
 	if !utils.IsJSON(buf) {
 		return nil, ErrInvalidSaveData
 	}

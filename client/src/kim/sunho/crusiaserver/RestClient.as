@@ -11,7 +11,7 @@ package kim.sunho.crusiaserver
 	public class RestClient
 	{
 		static private var list:Vector.<RestClient> = new Vector.<RestClient>;
-		static public function execute(url: String, method:String, params:*, resultHandler:Function, errorHandler:Function, json:Boolean = true):void
+		static public function execute(url: String, method:String, params:*, resultHandler:Function, errorHandler:Function, json:Boolean = true, header:Array = null):void
 		{
 			var client:RestClient = new RestClient;
 			client.url = url;
@@ -20,6 +20,7 @@ package kim.sunho.crusiaserver
 			client.resultHandler = resultHandler;
 			client.errorHandler = errorHandler;
 			client.json = json;
+			client.header = header;
 			
 			list.push(client);
 			client.run();
@@ -27,10 +28,11 @@ package kim.sunho.crusiaserver
 
 		private var url:String;
 		private var method:String;
-		private var json:Boolean;
 		private var params:*;
 		private var resultHandler:Function;
 		private var errorHandler:Function;
+		private var json:Boolean;
+		private var header:Array;
 		
 		private var loader:URLLoader;
 		private var status:int;
@@ -52,6 +54,10 @@ package kim.sunho.crusiaserver
 			{
 				req.contentType = "application/json";
 				req.data = JSON.stringify(params);
+			}
+			
+			if(header) {
+				req.requestHeaders = header;
 			}
 			
 			loader.addEventListener(Event.COMPLETE, onComplete);

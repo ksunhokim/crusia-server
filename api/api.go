@@ -39,8 +39,8 @@ func (a *Api) Http() http.Handler {
 	r.Post("/register", a.Register)
 	r.Route("/save", func(s chi.Router) {
 		s.Use(a.UserMiddleWare)
-		s.Get("/", a.GetSaveData)
-		s.Post("/", a.PostSaveData)
+		s.Post("/get", a.GetSaveData)
+		s.Post("/set", a.PostSaveData)
 	})
 
 	return r

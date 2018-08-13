@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -13,26 +14,26 @@ var (
 	ErrInvalidBlockSize = errors.New("server: invalid block size")
 )
 
-func Encrypt(key []byte, payload []byte) (string, error) {
+func Encrypt(key, iv, payload []byte) (string, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
 
-	cipherText := make([]byte, aes.BlockSize+len(payload))
-	iv := cipherText[:aes.BlockSize]
-	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
-		return "", err
-	}
 
-	stream := cipher.NewCFBEncrypter(block, iv)
-	stream.XORKeyStream(cipherText[aes.BlockSize:], payload)
+	b := text
+	b = PKCS5Padding(b, aes.BlockSize, len(payload))
 
-	return base64.URLEncoding.EncodeToString(cipherText), nil
+	cipherText := make([]byte, len(payload))
+
+	stream := cipher.NewCBCEncrypter(block, iv)
+	stream.CryptBlocks(cipherText[aes.BlockSize:], b)
+
+	return base64.StdEncoding.EncodeToString(cipherText), nil
 }
 
-func Decrypt(key []byte, payload string) ([]byte, error) {
-	cipherText, err := base64.URLEncoding.DecodeString(payload)
+func Decrypt(key, iv, payload string) ([]byte, error) {
+	cipherText, err := base64.StdEncoding.DecodeString(payload)
 	if err != nil {
 		return nil, err
 	}
@@ -46,11 +47,21 @@ func Decrypt(key []byte, payload string) ([]byte, error) {
 		return nil, ErrInvalidBlockSize
 	}
 
-	iv := cipherText[:aes.BlockSize]
-	cipherText = cipherText[aes.BlockSize:]
+	decrypted := make([]byte, len(cipherText))
+	stream := cipher.NewCBCDecrypter(block, iv)
+	stream.CryptBlocks(decrypted, cipherText)
 
-	stream := cipher.NewCFBDecrypter(block, iv)
-	stream.XORKeyStream(cipherText, cipherText)
+	return PKCS5UnPadding(decrypted), nil
+}
 
-	return cipherText, nil
+func PKCS5Padding(ciphertext []byte, blockSize int, after int) []byte {
+	padding := (blockSize - len(ciphertext)%blockSize)
+	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(ciphertext, padtext...)
+}
+
+func PKCS5UnPadding(src []byte) []byte {
+	length := len(src)
+	unpadding := int(src[length-1])
+	return src[:(length - unpadding)]
 }

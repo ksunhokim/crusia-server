@@ -1,11 +1,13 @@
 package utils
 
 import (
+	"fmt"
 	"encoding/json"
 	"net/http"
 )
 
 func HttpError(w http.ResponseWriter, err error, code int) {
+	fmt.Println(err)
 	http.Error(w, err.Error(), code)
 }
 
