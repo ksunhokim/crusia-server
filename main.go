@@ -17,12 +17,14 @@ import (
 type SaveKey struct {
 	Version int    `yaml:"version"`
 	Key     string `yaml:"key"`
+	IV      string `yaml:"iv"`
 }
 
 type Config struct {
 	Addr     string    `yaml:"addr"`
 	Version  int       `yaml:"version"`
 	Key      string    `yaml:"key"`
+	IV       string    `yaml:"iv"`
 	SaveKeys []SaveKey `yaml:"save_keys"`
 }
 
@@ -35,6 +37,7 @@ func parseSaveKeys(keys []SaveKey) ([]server.SaveKey, error) {
 		}
 		out = append(out, server.SaveKey{
 			Version: s.Version,
+			IV:      []byte(s.IV),
 			Payload: buf,
 		})
 	}
@@ -64,7 +67,7 @@ func createServer(buf []byte, db *storm.DB) (*server.Server, error) {
 		return nil, err
 	}
 
-	serv := server.New(conf.Version, bs, key, skeys, conf.Addr)
+	serv := server.New(conf.Version, bs, key, []byte(conf.IV), skeys, conf.Addr)
 	return serv, nil
 }
 

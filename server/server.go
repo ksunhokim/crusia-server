@@ -34,7 +34,7 @@ type SaveKey struct {
 type Server struct {
 	version   int
 	key       []byte
-	iv        []byte,
+	iv        []byte
 	saveKeys  []SaveKey
 	stor      store.Store
 	apiServer *http.Server
@@ -104,7 +104,7 @@ func (s *Server) getSaveKey(version int) (SaveKey, bool) {
 		}
 	}
 
-	return nil, false
+	return SaveKey{}, false
 }
 
 func (s *Server) decryptSaveData(version int, payload string) ([]byte, error) {

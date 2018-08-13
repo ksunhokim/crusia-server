@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/rand"
 	"encoding/base64"
 	"errors"
-	"io"
 )
 
 var (
@@ -20,8 +18,7 @@ func Encrypt(key, iv, payload []byte) (string, error) {
 		return "", err
 	}
 
-
-	b := text
+	b := payload
 	b = PKCS5Padding(b, aes.BlockSize, len(payload))
 
 	cipherText := make([]byte, len(payload))
@@ -32,7 +29,7 @@ func Encrypt(key, iv, payload []byte) (string, error) {
 	return base64.StdEncoding.EncodeToString(cipherText), nil
 }
 
-func Decrypt(key, iv, payload string) ([]byte, error) {
+func Decrypt(key, iv []byte, payload string) ([]byte, error) {
 	cipherText, err := base64.StdEncoding.DecodeString(payload)
 	if err != nil {
 		return nil, err
