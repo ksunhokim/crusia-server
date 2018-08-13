@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi"
 	"github.com/sunho/crusia-server/store"
 	"github.com/sunho/crusia-server/utils"
 )
@@ -25,6 +26,21 @@ type Api struct {
 
 func New(in ApiInterface) *Api {
 	return &Api{in: in}
+}
+
+func (a *Api) Http() http.Handler {
+	r := chi.NewRouter()
+	r.Get("/version", a.GetVersion)
+	r.Route("/user", func(s chi.Router) {
+		s.Get("/", a.Login)
+		s.Post("/", a.Register)
+	})
+	r.Route("/save", func(s chi.Router) {
+		s.Get("/", a.GetSaveData)
+		s.Post("/", a.PostSaveData)
+	})
+
+	return r
 }
 
 func (a *Api) GetVersion(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +70,7 @@ func (a *Api) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if u.Passhash != req.Passhash {
-		utils.HttpError(w, err, 403)
+		http.Error(w, http.StatusText(403), 403)
 		return
 	}
 
@@ -82,15 +98,17 @@ func (a *Api) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := a.in.GetStore().CreateUser(&store.User{
+	u := &store.User{
 		Username: req.Username,
 		Passhash: req.Passhash,
-	})
+	}
+	err = a.in.GetStore().CreateUser(u)
 	if err != nil {
 		utils.HttpError(w, err, 409)
 		return
 	}
-	_, err = a.in.GetStore().CreateSaveData(&store.SaveData{
+
+	err = a.in.GetStore().CreateSaveData(&store.SaveData{
 		UserID:  u.ID,
 		Edited:  time.Now(),
 		Payload: "{}",

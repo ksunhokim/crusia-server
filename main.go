@@ -4,8 +4,13 @@ import (
 	"encoding/base64"
 	"io/ioutil"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/asdine/storm"
 	"github.com/sunho/crusia-server/server"
+	"github.com/sunho/crusia-server/store/boltstore"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -52,5 +57,24 @@ func main() {
 		log.Fatal(err)
 	}
 
-	serv := server.New(conf.Version, secrets, conf.Addr)
+	db, err := storm.Open("bolt.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	bs := boltstore.New(db)
+	err = bs.Init()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	serv := server.New(conf.Version, bs, secrets, conf.Addr)
+	serv.Run()
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
+
+	serv.Stop()
+	db.Close()
 }
