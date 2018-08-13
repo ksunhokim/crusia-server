@@ -21,10 +21,10 @@ func Encrypt(key, iv, payload []byte) (string, error) {
 	b := payload
 	b = PKCS5Padding(b, aes.BlockSize, len(payload))
 
-	cipherText := make([]byte, len(payload))
+	cipherText := make([]byte, len(b))
 
 	stream := cipher.NewCBCEncrypter(block, iv)
-	stream.CryptBlocks(cipherText[aes.BlockSize:], b)
+	stream.CryptBlocks(cipherText, b)
 
 	return base64.StdEncoding.EncodeToString(cipherText), nil
 }

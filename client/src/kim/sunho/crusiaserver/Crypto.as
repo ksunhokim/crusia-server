@@ -14,20 +14,21 @@ package kim.sunho.crusiaserver
 	public class Crypto
 	{
 		static public function sha256(str:String):String {
-			var src:ByteArray = new ByteArray;
-			src.writeUTFBytes(str);
+			var src:ByteArray = Hex.toArray(Hex.fromString(str));
 			var sha:SHA256 = new SHA256();
+			
 			return Hex.fromArray(sha.hash(src));
 		}
 		
-		static public function aes128(key:String, str:String):String {
-			var inputBA:ByteArray=Hex.toArray(Hex.fromString(str));        
-			var keyBA:ByteArray = Hex.toArray(Hex.fromString(key));                
+		static public function aes128(key:String, iv:String, str:String):String {
+			var inputBA:ByteArray = Hex.toArray(Hex.fromString(str));        
+			var keyBA:ByteArray = Hex.toArray(Hex.fromString(key));  
+			
 			var pad:IPad = new PKCS5();
 			var aes:ICipher = com.hurlant.crypto.Crypto.getCipher("aes-128-cbc", keyBA, pad);
-			var iv:String = randomString(16);
 			var ivmode:IVMode = aes as IVMode;
-			ivmode.IV = Hex.toArray(Hex.fromString(iv));            
+			ivmode.IV = Hex.toArray(Hex.fromString(iv));  
+			
 			aes.encrypt(inputBA); 
 			return Base64.encodeByteArray(inputBA);
 		}

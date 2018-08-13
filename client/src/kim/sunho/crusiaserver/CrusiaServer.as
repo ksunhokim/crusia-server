@@ -1,10 +1,8 @@
 package kim.sunho.crusiaserver
 {
-	import com.hurlant.crypto.hash.SHA256;
 	import com.hurlant.util.Base64;
 	
 	import flash.net.URLRequestHeader;
-	import flash.utils.ByteArray;
 	
 	import kim.sunho.crusiaserver.CrusiaServerError;
 	import kim.sunho.crusiaserver.Crypto;
@@ -13,14 +11,16 @@ package kim.sunho.crusiaserver
 	{
 		private var url:String;
 		private var version:int;
-		private var saveKey:String;
+		private var key:String;
+		private var iv:String;
 		private var token:String;
 		
-		public function CrusiaServer(url:String, version:int, saveKey:String)
+		public function CrusiaServer(url:String, version:int, key:String, iv:String)
 		{
 			this.url = url;
 			this.version = version;
-			this.saveKey = Base64.decode(saveKey);
+			this.key = Base64.decode(key);
+			this.iv = iv;
 		}
 		
 		public function serverVersion(resultHandler:Function, errorHandler:Function):void
@@ -28,20 +28,19 @@ package kim.sunho.crusiaserver
 			RestClient.execute(url + "/version", "GET", null,
 				function(res:Object):void 
 				{
-					if (res.version) 
+					if (!res.data || !res.data.version) 
 					{
-						resultHandler(int(res.version));
+						errorHandler(CrusiaServerError.BAD_FORMAT);
 					}
 					else 
 					{
-						errorHandler(CrusiaServerError.NETWORK);
+						resultHandler(int(res.data.version));
 					}
 				},
 				function(status:int, err:String):void
 				{
-					errorHandler(CrusiaServerError.UNKNOWN);
-				},
-				true
+					errorHandler(CrusiaServerError.UNKNOWN, err);
+				}
 			);
 		}
 		
@@ -57,31 +56,35 @@ package kim.sunho.crusiaserver
 			RestClient.execute(url + "/login", "POST", params,
 				function(res:Object):void 
 				{
-					if (res.token) 
+					if (!res.data || !res.data.token) 
 					{
-						token = res.token;
-						trace(token);
-						resultHandler();
-					} 
+						errorHandler(CrusiaServerError.BAD_FORMAT, "");
+					}
 					else 
 					{
-						errorHandler(CrusiaServerError.NETWORK);
-					}
+						token = res.data.token;
+						resultHandler();
+					}	
 				},
 				function(status:int, err:String):void
 				{
+					if (err.indexOf("json") >= 0) 
+					{
+						errorHandler(CrusiaServerError.BAD_FORMAT, err);
+						return
+					}
 					switch (status) {
 					case 400:
-						errorHandler(CrusiaServerError.BAD_FORMAT);
+						errorHandler(CrusiaServerError.BAD_FORMAT, err);
 						break;
 					case 403:
-						errorHandler(CrusiaServerError.WRONG_PASSWORD);
+						errorHandler(CrusiaServerError.WRONG_PASSWORD, err);
 						break;
 					case 404:
-						errorHandler(CrusiaServerError.NO_SUCH_USER);
+						errorHandler(CrusiaServerError.NO_SUCH_USER, err);
 						break;
 					default:
-						errorHandler(CrusiaServerError.UNKNOWN);
+						errorHandler(CrusiaServerError.UNKNOWN, err);
 						break
 					}
 				}
@@ -105,19 +108,24 @@ package kim.sunho.crusiaserver
 				},
 				function(status:int, err:String):void
 				{
-					switch (status) {
+					if (err.indexOf("json") >= 0) 
+					{
+						errorHandler(CrusiaServerError.BAD_FORMAT, err);
+						return
+					}
+					switch (status) 
+					{
 						case 400:
-							errorHandler(CrusiaServerError.BAD_FORMAT);
+							errorHandler(CrusiaServerError.BAD_FORMAT, err);
 							break;
 						case 409:
-							errorHandler(CrusiaServerError.EXISTING_USER);
+							errorHandler(CrusiaServerError.EXISTING_USER, err);
 							break;
 						default:
-							errorHandler(CrusiaServerError.UNKNOWN);
+							errorHandler(CrusiaServerError.UNKNOWN, err);
 							break
 					}
-				},
-				false
+				}
 			);
 		}
 	
@@ -125,31 +133,42 @@ package kim.sunho.crusiaserver
 		{
 			var header:Array = tokenHeader();
 			
-			RestClient.execute(url + "/save/get", "POST", " ",
+			RestClient.execute(url + "/save/get", "POST", "dummy",
 				function(res:Object):void 
 				{
-					resultHandler(res);
+					if (!res.data || !res.data.json) 
+					{
+						errorHandler(CrusiaServerError.BAD_FORMAT, "");
+					}
+					else 
+					{
+						try 
+						{
+							resultHandler(JSON.parse(res.data.json));
+						}
+						catch(e:TypeError)
+						{
+							errorHandler(CrusiaServerError.BAD_FORMAT, "");
+						}
+					}
 				},
 				function(status:int, err:String):void
 				{
-					switch (status) {
-						case 200:
-							if (err.indexOf("json") >= 0) {
-								errorHandler(CrusiaServerError.BAD_FORMAT);
-							}
-							break;
-						case 400:
-							errorHandler(CrusiaServerError.BAD_FORMAT);
-							break;
-						case 409:
-							errorHandler(CrusiaServerError.EXISTING_USER);
+					if (err.indexOf("json") >= 0) 
+					{
+						errorHandler(CrusiaServerError.BAD_FORMAT, err);
+						return;
+					}
+					switch (status) 
+					{
+						case 403:
+							errorHandler(CrusiaServerError.UNAUTHORIZED, err);
 							break;
 						default:
-							errorHandler(CrusiaServerError.UNKNOWN);
+							errorHandler(CrusiaServerError.UNKNOWN, err);
 							break
 					}
 				},
-				true,
 				header
 			);
 		}
@@ -159,30 +178,29 @@ package kim.sunho.crusiaserver
 			var header:Array = tokenHeader();
 			var item:URLRequestHeader = new URLRequestHeader("X-Save-Version", String(version));
 			header.push(item);
-			trace(JSON.stringify(header));
-			
-			var str:String = Crypto.aes128(saveKey, JSON.stringify(obj));
-			trace(str);
+			var str:String = Crypto.aes128(key, iv, JSON.stringify(obj));
+		
 			RestClient.execute(url + "/save/set", "POST", str,
-				function(res:String):void 
+				function(res:Object):void 
 				{
 					resultHandler();
 				},
 				function(status:int, err:String):void
 				{
+					if (err.indexOf("json") >= 0) 
+					{
+						errorHandler(CrusiaServerError.BAD_FORMAT, err);
+						return
+					}
 					switch (status) {
 						case 400:
-							errorHandler(CrusiaServerError.BAD_FORMAT);
-							break;
-						case 409:
-							errorHandler(CrusiaServerError.EXISTING_USER);
+							errorHandler(CrusiaServerError.BAD_FORMAT, err);
 							break;
 						default:
-							errorHandler(CrusiaServerError.UNKNOWN);
+							errorHandler(CrusiaServerError.UNKNOWN, err);
 							break
 					}
 				},
-				false,
 				header
 			);
 		}

@@ -6,12 +6,11 @@ package kim.sunho.crusiaserver
 	import flash.net.URLLoader;
 	import flash.net.URLLoaderDataFormat;
 	import flash.net.URLRequest;
-	
 
 	public class RestClient
 	{
 		static private var list:Vector.<RestClient> = new Vector.<RestClient>;
-		static public function execute(url: String, method:String, params:*, resultHandler:Function, errorHandler:Function, json:Boolean = true, header:Array = null):void
+		static public function execute(url: String, method:String, params:*, resultHandler:Function, errorHandler:Function, header:Array = null):void
 		{
 			var client:RestClient = new RestClient;
 			client.url = url;
@@ -19,7 +18,6 @@ package kim.sunho.crusiaserver
 			client.params = params;
 			client.resultHandler = resultHandler;
 			client.errorHandler = errorHandler;
-			client.json = json;
 			client.header = header;
 			
 			list.push(client);
@@ -35,7 +33,6 @@ package kim.sunho.crusiaserver
 		private var header:Array;
 		
 		private var loader:URLLoader;
-		private var status:int;
 		
 		public function run():void
 		{
@@ -62,38 +59,34 @@ package kim.sunho.crusiaserver
 			
 			loader.addEventListener(Event.COMPLETE, onComplete);
 			loader.addEventListener(IOErrorEvent.IO_ERROR, onError);
-			loader.addEventListener(HTTPStatusEvent.HTTP_STATUS, onStatus);
 			loader.load(req);
 		}
 		
 		private function onComplete(e:Event):void
 		{
-			if (json) 
+			try 
 			{
-				try 
+				var o:Object = JSON.parse(loader.data);
+				if (o.status != 200)
 				{
-					resultHandler(JSON.parse(loader.data));
+					errorHandler(o.status, o.msg);
 				}
-				catch(e:TypeError)
+				else
 				{
-					errorHandler("json parse error");
+					resultHandler(o);
 				}
-			} 
-			else 
+			}
+			catch(e:TypeError)
 			{
-				resultHandler(loader.data);
+				errorHandler(400, "json parse error");
 			}
 			
 			destroy();
 		}
 		
 		private function onError(e:IOErrorEvent):void {
-			errorHandler(status, e.text);
+			errorHandler(500, e.text);
 			destroy();
-		}
-		
-		private function onStatus(e:HTTPStatusEvent):void {
-			status = e.status;
 		}
 		
 		

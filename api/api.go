@@ -131,7 +131,7 @@ func (a *Api) GetSaveData(w http.ResponseWriter, r *http.Request) {
 		utils.HttpError(w, err, 500)
 		return
 	}
-	fmt.Fprintln(w, data.Payload)
+	utils.HttpJson(w, data.Payload)
 }
 
 func (a *Api) PostSaveData(w http.ResponseWriter, r *http.Request) {
@@ -166,5 +166,5 @@ func (a *Api) PostSaveData(w http.ResponseWriter, r *http.Request) {
 		utils.HttpError(w, err, 500)
 		return
 	}
-	w.WriteHeader(201)
+	w.WriteHeader(200)
 }
