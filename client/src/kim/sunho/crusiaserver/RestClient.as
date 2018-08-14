@@ -1,7 +1,6 @@
 package kim.sunho.crusiaserver
 {
 	import flash.events.Event;
-	import flash.events.HTTPStatusEvent;
 	import flash.events.IOErrorEvent;
 	import flash.net.URLLoader;
 	import flash.net.URLLoaderDataFormat;
@@ -10,7 +9,7 @@ package kim.sunho.crusiaserver
 	public class RestClient
 	{
 		static private var list:Vector.<RestClient> = new Vector.<RestClient>;
-		static public function execute(url: String, method:String, params:*, resultHandler:Function, errorHandler:Function, header:Array = null):void
+		static public function execute(url: String, method:String, params:*, resultHandler:Function, errorHandler:Function, header:Array = null, retries:int = 0):void
 		{
 			var client:RestClient = new RestClient;
 			client.url = url;
@@ -19,8 +18,10 @@ package kim.sunho.crusiaserver
 			client.resultHandler = resultHandler;
 			client.errorHandler = errorHandler;
 			client.header = header;
+			client.retries = retries;
 			
 			list.push(client);
+			client.setup();
 			client.run();
 		}
 
@@ -33,12 +34,18 @@ package kim.sunho.crusiaserver
 		private var header:Array;
 		
 		private var loader:URLLoader;
+		private var retries:int;
 		
-		public function run():void
+		public function setup():void
 		{
 			loader = new URLLoader;
 			loader.dataFormat = URLLoaderDataFormat.TEXT;
-			
+			loader.addEventListener(Event.COMPLETE, onComplete);
+			loader.addEventListener(IOErrorEvent.IO_ERROR, onError);
+		}
+		
+		public function run():void
+		{
 			var req:URLRequest = new URLRequest(url);
 			req.method = method;
 			
@@ -56,9 +63,7 @@ package kim.sunho.crusiaserver
 			if(header) {
 				req.requestHeaders = req.requestHeaders.concat(header);
 			}
-			
-			loader.addEventListener(Event.COMPLETE, onComplete);
-			loader.addEventListener(IOErrorEvent.IO_ERROR, onError);
+
 			loader.load(req);
 		}
 		
@@ -88,6 +93,13 @@ package kim.sunho.crusiaserver
 		
 		private function onError(e:IOErrorEvent):void {
 			if (e.target != loader) return;
+			
+			if (retries != 0) 
+			{
+				retries --;
+				run();
+				return;
+			}
 			
 			errorHandler(500, e.text);
 			destroy();

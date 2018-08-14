@@ -116,6 +116,12 @@ func (a *Api) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, err = a.in.GetStore().GetUserByUsername(req.Username)
+	if err == nil {
+		utils.HttpError(w, fmt.Errorf(""), 409)
+		return
+	}
+
 	u := &store.User{
 		Username: req.Username,
 		Passhash: req.Passhash,

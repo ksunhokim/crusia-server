@@ -132,7 +132,7 @@ package kim.sunho.crusiaserver
 		public function getSaveData(resultHandler:Function, errorHandler:Function):void 
 		{
 			var header:Array = tokenHeader();
-			trace(header);
+			
 			RestClient.execute(url + "/save/get", "POST", {"du":"mmy"},
 				function(res:Object):void 
 				{
@@ -169,7 +169,8 @@ package kim.sunho.crusiaserver
 							break
 					}
 				},
-				header
+				header,
+				20
 			);
 		}
 		
@@ -201,7 +202,8 @@ package kim.sunho.crusiaserver
 							break
 					}
 				},
-				header
+				header,
+				20
 			);
 		}
 		

@@ -33,7 +33,7 @@ package kim.sunho.crusiaserver
 			return Base64.encodeByteArray(inputBA);
 		}
 		
-		static private function randomString(strlen:Number):String{
+		static public function randomString(strlen:Number):String{
 			var chars:String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 			var num_chars:Number = chars.length - 1;
 			var randomChar:String = "";
